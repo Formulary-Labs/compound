@@ -1,6 +1,6 @@
 # compound
 
-Management system document assembler.
+`compound` builds the Annex SL structure and fills every section it can derive from data. The sections requiring prose — scope statements, leadership commitment, management review narratives — it leaves marked for you.
 
 ```bash
 go get github.com/Formulary-Labs/compound
@@ -8,9 +8,9 @@ go get github.com/Formulary-Labs/compound
 
 ## What it does
 
-`compound` produces Annex SL-structured management system documents (Clauses 4–10) from program artifacts. It fills every section where the content can be derived from the program's coverage, risk, and scope data. Sections that require prose — the organization's context, leadership commitment statements, policy intent, management review narrative — are flagged `[DATA NEEDED: narrative — agent layer]`.
+`compound` produces Annex SL-structured management system documents (Clauses 4–10) from program artifacts. It fills every section where the content can be derived from the program's coverage, risk, and scope data. Sections that require prose are flagged `[DATA NEEDED: narrative — agent layer]`.
 
-`compound` builds the structure and populates the data. The agent layer fills the prose. This division is explicit and auditable.
+Structure and data from `compound`. Prose from the agent layer. The division is explicit and auditable.
 
 Supported standards: ISO/IEC 27001:2022 (ISMS), ISO/IEC 42001:2023 (AIMS), IEC 62443 (CSMS).
 
