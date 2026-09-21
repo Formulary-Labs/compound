@@ -105,3 +105,120 @@ func TestAssemble_brandedOutput(t *testing.T) {
 		t.Error("branded output missing organization name")
 	}
 }
+
+func TestAssembleDelta_regeneratesOnlyChangedClauses(t *testing.T) {
+	cfg := assemble.DocumentConfig{
+		Program:    "test",
+		Standard:   assemble.ISO27001,
+		ReviewMode: assemble.DeltaReview,
+	}
+
+	prev := &assemble.ProgramContext{
+		Program:      "test",
+		Scope:        "Original scope",
+		RiskCount:    10,
+		OpenRisks:    5,
+		CriticalRisks: 1,
+	}
+	curr := &assemble.ProgramContext{
+		Program:      "test",
+		Scope:        "Updated scope — new boundary",
+		RiskCount:    15, // risk count changed
+		OpenRisks:    8,
+		CriticalRisks: 2,
+	}
+
+	doc := assemble.AssembleDelta(cfg, curr, prev)
+
+	// Delta document must reference delta_review mode.
+	if !strings.Contains(doc, "delta_review") {
+		t.Error("delta output should identify itself as delta_review mode")
+	}
+
+	// Changed clauses (4: scope, 6: risks) must be present.
+	if !strings.Contains(doc, "Clause 4") {
+		t.Error("Clause 4 should be regenerated — scope changed")
+	}
+	if !strings.Contains(doc, "Clause 6") {
+		t.Error("Clause 6 should be regenerated — risk count changed")
+	}
+
+	// Unchanged clauses (5, 7, 8, 9, 10) should NOT appear — no inputs changed.
+	for _, unchanged := range []string{"Clause 5", "Clause 7", "Clause 9", "Clause 10"} {
+		if strings.Contains(doc, unchanged) {
+			t.Errorf("%s should not be regenerated — no inputs changed", unchanged)
+		}
+	}
+
+	// Version control table must record updated clauses.
+	if !strings.Contains(doc, "Version Control") {
+		t.Error("delta output should include Version Control table")
+	}
+}
+
+func TestAssembleDelta_noChangesReturnsNote(t *testing.T) {
+	cfg := assemble.DocumentConfig{
+		Program:    "test",
+		Standard:   assemble.ISO27001,
+		ReviewMode: assemble.DeltaReview,
+	}
+
+	identical := &assemble.ProgramContext{
+		Program:   "test",
+		Scope:     "Same scope",
+		RiskCount: 10,
+	}
+	doc := assemble.AssembleDelta(cfg, identical, identical)
+
+	if !strings.Contains(doc, "No clause inputs changed") {
+		t.Error("when no inputs differ, delta should return a no-change note")
+	}
+}
+
+func TestAssembleSection_regeneratesSingleClause(t *testing.T) {
+	cfg := assemble.DocumentConfig{
+		Program:       "test",
+		Standard:      assemble.ISO27001,
+		ReviewMode:    assemble.SectionUpdate,
+		SectionTarget: "8",
+	}
+	ctx := &assemble.ProgramContext{
+		Program: "test",
+		Coverage: &struct {
+			TotalControls int     `json:"total_controls,omitempty"`
+			EvidencedPct  float64 `json:"evidenced_pct,omitempty"`
+			GapPct        float64 `json:"gap_pct,omitempty"`
+		}{TotalControls: 93, EvidencedPct: 82, GapPct: 8},
+	}
+
+	doc, err := assemble.AssembleSection(cfg, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(doc, "Clause 8") {
+		t.Error("section_update for section 8 should contain Clause 8")
+	}
+	if !strings.Contains(doc, "section_update") {
+		t.Error("section output should identify itself as section_update mode")
+	}
+	// Only Clause 8 — other clauses must not appear.
+	for _, other := range []string{"Clause 4", "Clause 5", "Clause 6", "Clause 7", "Clause 9", "Clause 10"} {
+		if strings.Contains(doc, other) {
+			t.Errorf("%s should not appear in section_update for clause 8", other)
+		}
+	}
+}
+
+func TestAssembleSection_invalidSectionReturnsError(t *testing.T) {
+	cfg := assemble.DocumentConfig{
+		Program:       "test",
+		Standard:      assemble.ISO27001,
+		ReviewMode:    assemble.SectionUpdate,
+		SectionTarget: "99",
+	}
+	_, err := assemble.AssembleSection(cfg, nil)
+	if err == nil {
+		t.Error("expected error for invalid section number 99")
+	}
+}
