@@ -133,7 +133,7 @@ func main() {
 	if *dryRunFlag || *outputFlag == "" {
 		fmt.Print(doc)
 	} else {
-		if err := os.WriteFile(*outputFlag, []byte(doc), 0o644); err != nil {
+		if err := os.WriteFile(*outputFlag, []byte(doc), 0o600); err != nil {
 			fmt.Fprintf(os.Stderr, "error writing output: %v\n", err)
 			os.Exit(exit.ToolError)
 		}

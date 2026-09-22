@@ -114,17 +114,17 @@ func TestAssembleDelta_regeneratesOnlyChangedClauses(t *testing.T) {
 	}
 
 	prev := &assemble.ProgramContext{
-		Program:      "test",
-		Scope:        "Original scope",
-		RiskCount:    10,
-		OpenRisks:    5,
+		Program:       "test",
+		Scope:         "Original scope",
+		RiskCount:     10,
+		OpenRisks:     5,
 		CriticalRisks: 1,
 	}
 	curr := &assemble.ProgramContext{
-		Program:      "test",
-		Scope:        "Updated scope — new boundary",
-		RiskCount:    15, // risk count changed
-		OpenRisks:    8,
+		Program:       "test",
+		Scope:         "Updated scope — new boundary",
+		RiskCount:     15, // risk count changed
+		OpenRisks:     8,
 		CriticalRisks: 2,
 	}
 
