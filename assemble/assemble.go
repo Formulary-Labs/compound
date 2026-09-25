@@ -52,6 +52,7 @@ type DocumentConfig struct {
 	BrandedOutput bool       `json:"branded_output,omitempty"`
 	OrgName       string     `json:"org_name,omitempty"`
 	SectionTarget string     `json:"section_target,omitempty"` // for section_update mode
+	GeneratedAt   time.Time  `json:"-"`                        // pin for golden tests; zero → now
 }
 
 // ProgramContext is the data compound reads from program artifacts.

@@ -2,6 +2,4 @@ module github.com/Formulary-Labs/compound
 
 go 1.26.6
 
-require github.com/Formulary-Labs/substrate v0.4.0
-
-require github.com/google/uuid v1.6.0 // indirect
+require github.com/Formulary-Labs/substrate v0.5.0

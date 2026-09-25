@@ -1,109 +1,89 @@
 # compound
 
-`compound` builds the Annex SL structure and fills every section it can derive from data. The sections requiring prose — scope statements, leadership commitment, management review narratives — it leaves marked for you.
+`compound` builds Annex SL-structured management system documents. It fills every section it can derive from data — either a program run-state or gemara artifacts — and leaves prose gaps marked for the agent layer.
 
 ```bash
 go get github.com/Formulary-Labs/compound
 ```
 
-## What it does
+## Modes
 
-`compound` produces Annex SL-structured management system documents (Clauses 4–10) from program artifacts. It fills every section where the content can be derived from the program's coverage, risk, and scope data. Sections that require prose are flagged `[DATA NEEDED: narrative — agent layer]`.
+### Run-state assembly (classic)
 
-Structure and data from `compound`. Prose from the agent layer. The division is explicit and auditable.
+```sh
+compound --program iso42001 --standard iso42001 --output docs/AIMS.md
+```
 
-Supported standards: ISO/IEC 27001:2022 (ISMS), ISO/IEC 42001:2023 (AIMS), IEC 62443 (CSMS).
+Reads `ProgramContext` from run state JSON (coverage, risk counts, scope). Sections needing judgment are flagged `[DATA NEEDED: narrative]`.
 
-## Usage
+### Gemara assemble-plan (security plan)
+
+```sh
+compound --assemble-plan \
+  --program iso27001 --standard iso27001 \
+  --gemara data/iso27001/gemara/ \
+  --output docs/ISMS-security-plan.md \
+  --report docs/assembly-report.json
+```
+
+Assembles a **security plan** (ISMS / AIMS / CSMS) from gemara layers:
+
+| Input | Role |
+|---|---|
+| `Policy` | PURPOSE / SCOPE / POLICY DETAILS (verbatim `metadata.description`), RACI, clause-bound via `applicability-groups` |
+| `ControlCatalog` | Clause 8 control themes / framework identity |
+| `AuditLog` | Clause 9.2 citations |
+| `RiskCatalog` | **Cited only** — never inlined as grids |
+
+Hard packet boundary: SoA, risk registers, and impact worksheets stay in the assessment packet (`formula` / `specimen`). The plan references them; it does not paste them.
+
+For auditor narratives that *do* include risk/eval inline, use [`appraise`](https://github.com/Formulary-Labs/appraise).
+
+## Review modes
+
+| Mode | What it generates |
+|---|---|
+| `full_assembly` | Complete Clauses 4–10 document |
+| `delta_review` | Only sections with changes (run-state or gemara fingerprint) |
+| `section_update` | A single clause 4–10 (run-state path) |
+
+```sh
+# Gemara delta
+compound --assemble-plan --program iso27001 --standard iso27001 \
+  --gemara data/iso27001/gemara/ --review-mode delta_review \
+  --prior-gemara data/iso27001/gemara-prior/
+```
+
+## Library usage
 
 ```go
 import "github.com/Formulary-Labs/compound/assemble"
 
-doc, err := assemble.Build(assemble.DocumentConfig{
-    Program:       "my-program",
-    Standard:      assemble.ISO27001,
-    OutputName:    "isms-2026",
-    Applicability: "Production SaaS platform — EU region",
-    ReviewCadence: "annual",
-    ReviewMode:    assemble.FullAssembly,
-    OrgName:       "Acme Corp",
-})
-
-// doc is a Markdown string — write it, render it, or pass it to an agent layer
+set, err := assemble.LoadGemaraSet([]string{"data/iso27001/gemara"}, "")
+result := assemble.AssemblePlan(assemble.DocumentConfig{
+    Program:  "iso27001",
+    Standard: assemble.ISO27001,
+}, set)
+// result.Markdown — security plan
+// result.Report  — clause ← artifact provenance
 ```
 
 ## Standards
 
 | Constant | Standard |
 |---|---|
-| `assemble.ISO27001` | ISO/IEC 27001:2022 — Information Security Management System |
-| `assemble.ISO42001` | ISO/IEC 42001:2023 — AI Management System |
-| `assemble.IEC62443` | IEC 62443 — Cybersecurity Management System |
+| `assemble.ISO27001` | ISO/IEC 27001:2022 — ISMS |
+| `assemble.ISO42001` | ISO/IEC 42001:2023 — AIMS |
+| `assemble.IEC62443` | IEC 62443 — CSMS |
 
-## Review modes
+## Pipeline
 
-| Mode | What it generates |
-|---|---|
-| `FullAssembly` | Complete Clauses 4–10 document |
-| `DeltaReview` | Only sections with changes since the last version |
-| `SectionUpdate` | A single target section |
-
-```go
-// Regenerate only Clause 6 — Planning
-assemble.DocumentConfig{
-    ReviewMode:    assemble.SectionUpdate,
-    SectionTarget: "6",
-}
+```text
+distill → probe → compound --assemble-plan → challenge → exhibit
+                 ↘ formula / titer / specimen  (packet, cite-only)
 ```
 
-`DeltaReview` and `SectionUpdate` modes require a prior version of the document to diff against. Pass the prior document's path in `DocumentConfig.PriorVersion`.
-
-## ProgramContext input
-
-`compound` reads program data assembled from `titer`, `specimen`, and the program's run state:
-
-```go
-assemble.ProgramContext{
-    Program:       "my-program",
-    Standard:      "iso27001",
-    Scope:         "Production SaaS platform — EU region",
-    ProductName:   "My Product",
-    Coverage: &struct {
-        TotalControls int
-        EvidencedPct  float64
-        GapPct        float64
-    }{TotalControls: 114, EvidencedPct: 82.0, GapPct: 12.0},
-    RiskCount:     14,
-    OpenRisks:     6,
-    CriticalRisks: 0,
-    Owner:         "security-team",
-}
-```
-
-## Output structure
-
-The output is a single Markdown string with:
-
-- Version control table (version, date, author, change summary)
-- Clauses 4–10 with section headings matching the standard's clause structure
-- Data-filled sections: scope, coverage metrics, risk summary, control family applicability
-- `[DATA NEEDED: narrative — agent layer]` for all prose sections requiring judgment
-
-Pass the output to the agent layer to fill `[DATA NEEDED]` placeholders, then review before submission.
-
-## Working with [DATA NEEDED] placeholders
-
-Each placeholder identifies the specific section and the type of content required:
-
-```markdown
-## Clause 5.1 — Leadership and Commitment
-
-[DATA NEEDED: narrative — agent layer]
-Describe how top management demonstrates leadership and commitment
-to the information security management system.
-```
-
-The agent layer (regimen) fills these using the program's constitution, memory, decisions log, and context. `compound` makes its scope boundary explicit so the generated sections are distinguishable from authored sections in the review process.
+See root `make pipeline-assemble-plan`.
 
 ## License
 
