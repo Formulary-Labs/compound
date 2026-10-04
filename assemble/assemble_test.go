@@ -1,6 +1,8 @@
 package assemble_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -220,5 +222,41 @@ func TestAssembleSection_invalidSectionReturnsError(t *testing.T) {
 	_, err := assemble.AssembleSection(cfg, nil)
 	if err == nil {
 		t.Error("expected error for invalid section number 99")
+	}
+}
+
+func TestLoadProgramContext_scopeObject(t *testing.T) {
+	raw := `{
+		"program_slug": "iso42001",
+		"scope": {"mission": "Unified AIMS certification", "in_scope": ["Lightspeed Core"]}
+	}`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ctx.json")
+	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, err := assemble.LoadProgramContext(path)
+	if err != nil {
+		t.Fatalf("LoadProgramContext: %v", err)
+	}
+	if ctx.Program != "iso42001" {
+		t.Errorf("program = %q", ctx.Program)
+	}
+	if ctx.Scope != "Unified AIMS certification" {
+		t.Errorf("scope = %q", ctx.Scope)
+	}
+}
+
+func TestLoadProgramContext_scopeString(t *testing.T) {
+	raw := `{"program":"p","scope":"literal scope"}`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ctx.json")
+	os.WriteFile(path, []byte(raw), 0o600) //nolint:errcheck
+	ctx, err := assemble.LoadProgramContext(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ctx.Scope != "literal scope" {
+		t.Errorf("scope = %q", ctx.Scope)
 	}
 }

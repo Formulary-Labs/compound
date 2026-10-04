@@ -86,16 +86,91 @@ type ProgramContext struct {
 }
 
 // LoadProgramContext reads program context from a run state JSON.
+// scope may be a string or an object (uses mission / first in_scope entry).
 func LoadProgramContext(path string) (*ProgramContext, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading program context %q: %w", path, err)
 	}
-	var ctx ProgramContext
-	if err := json.Unmarshal(data, &ctx); err != nil {
+	ctx, err := parseProgramContext(data)
+	if err != nil {
 		return nil, fmt.Errorf("parsing program context %q: %w", path, err)
 	}
-	return &ctx, nil
+	return ctx, nil
+}
+
+func parseProgramContext(data []byte) (*ProgramContext, error) {
+	var raw struct {
+		Program     string          `json:"program"`
+		ProgramSlug string          `json:"program_slug"`
+		ProgramName string          `json:"program_name"`
+		Standard    string          `json:"standard"`
+		Framework   string          `json:"framework"`
+		ProductName string          `json:"product_name"`
+		Owner       string          `json:"owner"`
+		RunDate     *time.Time      `json:"run_date"`
+		LastUpdated *time.Time      `json:"last_updated"`
+		Scope       json.RawMessage `json:"scope"`
+		Coverage    *struct {
+			TotalControls int     `json:"total_controls,omitempty"`
+			EvidencedPct  float64 `json:"evidenced_pct,omitempty"`
+			GapPct        float64 `json:"gap_pct,omitempty"`
+		} `json:"coverage"`
+		RiskCount     int `json:"risk_count"`
+		OpenRisks     int `json:"open_risks"`
+		CriticalRisks int `json:"critical_risks"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, err
+	}
+	ctx := &ProgramContext{
+		Program:       firstNonEmpty(raw.Program, raw.ProgramSlug),
+		Standard:      raw.Standard,
+		Framework:     raw.Framework,
+		ProductName:   firstNonEmpty(raw.ProductName, raw.ProgramName),
+		Owner:         raw.Owner,
+		RunDate:       raw.RunDate,
+		LastUpdated:   raw.LastUpdated,
+		Coverage:      raw.Coverage,
+		RiskCount:     raw.RiskCount,
+		OpenRisks:     raw.OpenRisks,
+		CriticalRisks: raw.CriticalRisks,
+		Scope:         parseScopeField(raw.Scope),
+	}
+	return ctx, nil
+}
+
+func parseScopeField(raw json.RawMessage) string {
+	if len(raw) == 0 || string(raw) == "null" {
+		return ""
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return s
+	}
+	var obj struct {
+		Mission string   `json:"mission"`
+		InScope []string `json:"in_scope"`
+	}
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		return ""
+	}
+	if obj.Mission != "" {
+		return obj.Mission
+	}
+	if len(obj.InScope) > 0 {
+		return obj.InScope[0]
+	}
+	return ""
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // Assemble produces the Annex SL-structured management system document.
