@@ -72,7 +72,7 @@ func main() {
 	}
 
 	if *assemblePlanFlag {
-		runAssemblePlan(*programFlag, *standardFlag, gemaraFlags, *clauseMapFlag, *priorGemaraFlag,
+		runPlan(*programFlag, *standardFlag, gemaraFlags, *clauseMapFlag, *priorGemaraFlag,
 			*reviewModeFlag, *scopeFlag, *orgNameFlag, *outputFlag, *reportFlag, *fmtFlag, *dryRunFlag)
 		return
 	}
@@ -146,7 +146,7 @@ func main() {
 	emitOutput(doc, nil, cfg, *fmtFlag, *outputFlag, "", *dryRunFlag, *programFlag, *standardFlag, *reviewModeFlag)
 }
 
-func runAssemblePlan(program, standard string, gemaraPaths []string, clauseMap, priorGemara, reviewMode, scope, org, output, reportPath, format string, dryRun bool) {
+func runPlan(program, standard string, gemaraPaths []string, clauseMap, priorGemara, reviewMode, scope, org, output, reportPath, format string, dryRun bool) {
 	if len(gemaraPaths) == 0 {
 		fmt.Fprintln(os.Stderr, `{"error": "--gemara is required for --assemble-plan (file or directory)", "code": 2}`)
 		os.Exit(exit.ToolError)
@@ -185,9 +185,9 @@ func runAssemblePlan(program, standard string, gemaraPaths []string, clauseMap, 
 			fmt.Fprintf(os.Stderr, `{"error": %q, "code": 2}`+"\n", err.Error())
 			os.Exit(exit.ToolError)
 		}
-		result = assemble.AssemblePlanDelta(cfg, set, prev)
+		result = assemble.PlanDelta(cfg, set, prev)
 	default:
-		result = assemble.AssemblePlan(cfg, set)
+		result = assemble.Plan(cfg, set)
 	}
 
 	emitOutput(result.Markdown, &result.Report, cfg, format, output, reportPath, dryRun, program, string(cfg.Standard), "assemble-plan")

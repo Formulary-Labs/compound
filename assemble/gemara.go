@@ -18,7 +18,7 @@ type GemaraSet struct {
 	Catalog        *artifact.ControlCatalog
 	CatalogPath    string
 	AuditLogs      []AuditLogRef
-	RiskCatalogs   []RiskCatalogRef // citation-only; never inlined into plan body
+	RiskCatalogs   []RiskCatalogRef  // citation-only; never inlined into plan body
 	ClauseMap      map[string]string // policy metadata.id → clause (e.g. "5.2")
 	ArtifactHashes map[string]string // path → content fingerprint for delta
 }
