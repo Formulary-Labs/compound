@@ -41,9 +41,9 @@ type PlanResult struct {
 	Report   AssemblyReport
 }
 
-// AssemblePlan builds a security plan from gemara artifacts with a hard packet
+// Plan builds a security plan from gemara artifacts with a hard packet
 // boundary: SoA / risk grids / impact worksheets are cited by reference only.
-func AssemblePlan(cfg DocumentConfig, set *GemaraSet) PlanResult {
+func Plan(cfg DocumentConfig, set *GemaraSet) PlanResult {
 	if set == nil {
 		set = &GemaraSet{}
 	}
@@ -110,8 +110,8 @@ func AssemblePlan(cfg DocumentConfig, set *GemaraSet) PlanResult {
 	return PlanResult{Markdown: md, Report: report}
 }
 
-// AssemblePlanDelta regenerates when gemara sources changed between prev and curr.
-func AssemblePlanDelta(cfg DocumentConfig, curr, prev *GemaraSet) PlanResult {
+// PlanDelta regenerates when gemara sources changed between prev and curr.
+func PlanDelta(cfg DocumentConfig, curr, prev *GemaraSet) PlanResult {
 	if curr == nil {
 		curr = &GemaraSet{}
 	}
@@ -129,7 +129,7 @@ func AssemblePlanDelta(cfg DocumentConfig, curr, prev *GemaraSet) PlanResult {
 			},
 		}
 	}
-	return AssemblePlan(cfg, curr)
+	return Plan(cfg, curr)
 }
 
 func writePlanHeader(sb *strings.Builder, docName string, cfg DocumentConfig, program, orgName, genDate string) {
@@ -630,4 +630,3 @@ func policyDetails(p *artifact.Policy) string {
 	}
 	return strings.Join(parts, "\n")
 }
-

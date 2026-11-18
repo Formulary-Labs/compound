@@ -45,7 +45,7 @@ func testCatalog() *artifact.ControlCatalog {
 	return cat
 }
 
-func TestAssemblePlan_goldenBody(t *testing.T) {
+func TestPlan_goldenBody(t *testing.T) {
 	cfg := assemble.DocumentConfig{
 		Program:     "test-isms",
 		Standard:    assemble.ISO27001,
@@ -63,7 +63,7 @@ func TestAssemblePlan_goldenBody(t *testing.T) {
 		},
 	}
 
-	result := assemble.AssemblePlan(cfg, set)
+	result := assemble.Plan(cfg, set)
 	doc := result.Markdown
 
 	mustContain := []string{
@@ -97,9 +97,9 @@ func TestAssemblePlan_goldenBody(t *testing.T) {
 	}
 
 	// Determinism: same inputs → same body.
-	again := assemble.AssemblePlan(cfg, set)
+	again := assemble.Plan(cfg, set)
 	if again.Markdown != doc {
-		t.Error("AssemblePlan is not deterministic for fixed GeneratedAt")
+		t.Error("Plan is not deterministic for fixed GeneratedAt")
 	}
 
 	if !result.Report.Clauses[1].Filled { // clause 5
@@ -107,7 +107,7 @@ func TestAssemblePlan_goldenBody(t *testing.T) {
 	}
 }
 
-func TestAssemblePlan_packetBoundaryRiskCitation(t *testing.T) {
+func TestPlan_packetBoundaryRiskCitation(t *testing.T) {
 	cfg := assemble.DocumentConfig{
 		Program:     "test",
 		Standard:    assemble.ISO27001,
@@ -123,7 +123,7 @@ func TestAssemblePlan_packetBoundaryRiskCitation(t *testing.T) {
 			{Path: "risks.yaml", Catalog: rc},
 		},
 	}
-	result := assemble.AssemblePlan(cfg, set)
+	result := assemble.Plan(cfg, set)
 	if !strings.Contains(result.Markdown, "RiskCatalog `risks-001`") {
 		t.Error("expected RiskCatalog citation in clause 6")
 	}
@@ -135,12 +135,12 @@ func TestAssemblePlan_packetBoundaryRiskCitation(t *testing.T) {
 	}
 }
 
-func TestAssemblePlanDelta_noChange(t *testing.T) {
+func TestPlanDelta_noChange(t *testing.T) {
 	cfg := assemble.DocumentConfig{Program: "test", Standard: assemble.ISO27001}
 	set := &assemble.GemaraSet{
 		ArtifactHashes: map[string]string{"a.yaml": "deadbeef"},
 	}
-	result := assemble.AssemblePlanDelta(cfg, set, set)
+	result := assemble.PlanDelta(cfg, set, set)
 	if !strings.Contains(result.Markdown, "No gemara inputs changed") {
 		t.Error("expected no-change note when fingerprints match")
 	}

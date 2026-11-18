@@ -60,7 +60,7 @@ compound --assemble-plan --program iso27001 --standard iso27001 \
 import "github.com/Formulary-Labs/compound/assemble"
 
 set, err := assemble.LoadGemaraSet([]string{"data/iso27001/gemara"}, "")
-result := assemble.AssemblePlan(assemble.DocumentConfig{
+result := assemble.Plan(assemble.DocumentConfig{
     Program:  "iso27001",
     Standard: assemble.ISO27001,
 }, set)
